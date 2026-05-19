@@ -188,6 +188,30 @@
   </div>
 </div>
 
+<!-- MODAL changement collaborateur -->
+<div class="modal-overlay" id="modal-collab" style="display:none" onclick="closeModal('modal-collab')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Changer le collaborateur</h2>
+      <button class="modal-close" onclick="closeModal('modal-collab')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="collab-contrat-id" />
+      <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)" id="collab-contrat-info"></div>
+      <div class="form-group">
+        <label>Collaborateur</label>
+        <select id="collab-select" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none">
+          <option value="">— Non assigné —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-collab')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCollab()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL utilisateur -->
 <div class="modal-overlay" id="modal-user" style="display:none" onclick="closeModal('modal-user')">
   <div class="modal" onclick="event.stopPropagation()">
@@ -474,7 +498,12 @@ async function loadNDC() {
       <td>${c.offre || '—'}</td>
       <td>${c.policy_name || '—'}</td>
       <td><span class="tag-pdv">${c.point_vente || '—'}</span></td>
-      <td>${c.collaborateur_nom || '<span style="color:#94a3b8">Non assigné</span>'}</td>
+      <td>
+        <span style="display:flex;align-items:center;gap:6px">
+          ${c.collaborateur_nom || '<span style="color:#94a3b8">Non assigné</span>'}
+          <button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px" onclick="openCollabModal(${c.id},'${c.client_name.replace(/'/g,"\\'")}','${(c.collaborateur_nom||'').replace(/'/g,"\\'")}')">✏️</button>
+        </span>
+      </td>
       <td>${exp.toLocaleDateString('fr-FR')}</td>
       <td><span class="badge-urgence ${badgeClass}">${label}</span></td>
     </tr>`;
@@ -715,6 +744,47 @@ async function deleteUser(id) {
   if (!confirm(`Supprimer ${user?.nom} ?`)) return;
   await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
   loadUsers();
+}
+
+// ── CHANGEMENT COLLABORATEUR ──────────────────────────────────────────────────
+
+let allCollabs = [];
+
+async function openCollabModal(id, clientName, currentCollab) {
+  document.getElementById('collab-contrat-id').value = id;
+  document.getElementById('collab-contrat-info').textContent = clientName;
+
+  // Charger la liste des collaborateurs (users + ceux déjà en base)
+  if (allCollabs.length === 0) {
+    const [fromUsers, fromContrats] = await Promise.all([
+      apiFetch('/api/users').then(r => r?.json() || []),
+      apiFetch('/api/contrats/collaborateurs').then(r => r?.json() || []),
+    ]);
+    const set = new Set([
+      ...fromUsers.filter(u => u.role === 'collaborateur').map(u => u.nom),
+      ...fromContrats,
+    ]);
+    allCollabs = [...set].sort();
+  }
+
+  const select = document.getElementById('collab-select');
+  select.innerHTML = '<option value="">— Non assigné —</option>' +
+    allCollabs.map(c => `<option value="${c}" ${c === currentCollab ? 'selected' : ''}>${c}</option>`).join('');
+
+  document.getElementById('modal-collab').style.display = 'flex';
+}
+
+async function saveCollab() {
+  const id = document.getElementById('collab-contrat-id').value;
+  const collaborateur_nom = document.getElementById('collab-select').value;
+  const r = await apiFetch(`/api/contrats/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ collaborateur_nom }),
+  });
+  if (!r) return;
+  closeModal('modal-collab');
+  loadNDC();
 }
 
 // ── INIT AUTO ─────────────────────────────────────────────────────────────────

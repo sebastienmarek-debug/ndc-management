@@ -80,6 +80,16 @@ router.get('/collaborateurs', auth, (req, res) => {
   res.json(rows.map(r => r.collaborateur_nom));
 });
 
+// PUT /api/contrats/:id — modifier le collaborateur
+router.put('/:id', auth, (req, res) => {
+  const { collaborateur_nom } = req.body;
+  const existing = db.prepare('SELECT id FROM contrats WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Contrat introuvable' });
+  db.prepare('UPDATE contrats SET collaborateur_nom = ? WHERE id = ?')
+    .run(collaborateur_nom ? collaborateur_nom.trim().toUpperCase() : null, req.params.id);
+  res.json({ ok: true });
+});
+
 // GET /api/contrats/points-vente
 router.get('/points-vente', auth, (req, res) => {
   const rows = db.prepare(
