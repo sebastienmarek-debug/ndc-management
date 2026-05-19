@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NDC — SARL ASSUREXCEL</title>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1e429f;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --success: #16a34a;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* LOGIN */
+  #login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-box { background: var(--card); border-radius: 12px; padding: 48px; box-shadow: 0 4px 24px rgba(0,0,0,.1); width: 380px; text-align: center; }
+  .login-box h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .login-box p { color: var(--text-muted); margin-bottom: 32px; font-size: 14px; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: var(--radius); font-size: 20px; letter-spacing: 6px; text-align: center; text-transform: uppercase; outline: none; }
+  .login-box input:focus { border-color: var(--primary); }
+
+  /* LAYOUT */
+  #app { display: none; }
+  .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0f172a; color: white; display: flex; flex-direction: column; z-index: 100; }
+  .sidebar-logo { padding: 20px; border-bottom: 1px solid #1e293b; }
+  .sidebar-logo h2 { font-size: 16px; font-weight: 700; }
+  .sidebar-logo span { font-size: 11px; color: #64748b; }
+  .sidebar-user { padding: 14px 20px; border-bottom: 1px solid #1e293b; font-size: 13px; color: #94a3b8; }
+  .sidebar-user strong { color: white; display: block; }
+  nav { flex: 1; padding: 12px 0; }
+  nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #94a3b8; text-decoration: none; font-size: 14px; cursor: pointer; transition: all .15s; }
+  nav a:hover, nav a.active { background: #1e293b; color: white; }
+  nav a .badge-nav { margin-left: auto; background: var(--danger); color: white; font-size: 11px; padding: 1px 7px; border-radius: 20px; }
+  .nav-section { padding: 16px 20px 6px; font-size: 10px; font-weight: 600; letter-spacing: 1px; color: #475569; text-transform: uppercase; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid #1e293b; }
+  .sidebar-footer button { background: none; border: none; color: #64748b; cursor: pointer; font-size: 13px; }
+  .sidebar-footer button:hover { color: white; }
+  .main { margin-left: 240px; min-height: 100vh; }
+  .topbar { background: white; border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar h1 { font-size: 18px; font-weight: 600; }
+  .content { padding: 24px 28px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all .15s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-outline { background: white; border: 1.5px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: #94a3b8; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+  .stat-card .label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .value.danger { color: var(--danger); }
+  .stat-card .value.warning { color: var(--warning); }
+  .stat-card .value.primary { color: var(--primary); }
+  .stat-card .value.success { color: var(--success); }
+
+  /* FILTERS */
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .filters input, .filters select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; outline: none; }
+  .filters input:focus, .filters select:focus { border-color: var(--primary); }
+  .filters input { min-width: 220px; }
+
+  /* TABLE */
+  .card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-header h3 { font-size: 15px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* URGENCE BADGES */
+  .badge-urgence { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .bg-danger { background: #fef2f2; color: var(--danger); }
+  .bg-warning { background: #fef9c3; color: var(--warning); }
+  .bg-primary { background: #eff6ff; color: var(--primary); }
+  .bg-ok { background: #f0fdf4; color: var(--success); }
+
+  /* IMPORT */
+  .import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .import-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px 20px; text-align: center; cursor: pointer; transition: all .2s; }
+  .import-zone:hover, .import-zone.drag { border-color: var(--primary); background: #eff6ff; }
+  .import-zone .icon { font-size: 36px; margin-bottom: 8px; }
+  .import-zone .label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .import-zone .hint { color: var(--text-muted); font-size: 13px; }
+  .import-zone .file-name { margin-top: 8px; font-size: 13px; color: var(--primary); font-weight: 500; }
+  .import-result { margin-top: 16px; padding: 14px 18px; border-radius: var(--radius); font-size: 14px; }
+  .import-result.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .import-result.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: white; border-radius: 12px; max-width: 560px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h2 { font-size: 18px; font-weight: 600; }
+  .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; outline: none; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+
+  .alert-info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: #1e40af; margin-bottom: 16px; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tag-pdv { display: inline-block; background: #f1f5f9; color: #475569; border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+
+  .import-history { margin-top: 24px; }
+  .import-history table td { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-box">
+    <h1>NDC ASSUREXCEL</h1>
+    <p>Notes de Couverture — Gestion des expirations</p>
+    <input type="text" id="login-code" placeholder="CODE" maxlength="10" autocomplete="off" />
+    <div id="login-error" class="import-result error" style="display:none"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:12px;justify-content:center" onclick="doLogin()">Connexion</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>NDC ASSUREXCEL</h2>
+      <span>Notes de Couverture</span>
+    </div>
+    <div class="sidebar-user">
+      <strong id="user-nom">—</strong>
+      <span id="user-role">—</span>
+    </div>
+    <nav>
+      <div class="nav-section">Tableau de bord</div>
+      <a onclick="showPage('dashboard')" id="nav-dashboard">
+        <span>📊</span> Tableau de bord
+      </a>
+      <a onclick="showPage('ndc')" id="nav-ndc">
+        <span>📋</span> Notes de couverture
+        <span class="badge-nav" id="badge-j7" style="display:none"></span>
+      </a>
+      <div class="nav-section" id="nav-section-admin" style="display:none">Administration</div>
+      <a onclick="showPage('import')" id="nav-import" style="display:none">
+        <span>📤</span> Importer les fichiers
+      </a>
+      <a onclick="showPage('users')" id="nav-users" style="display:none">
+        <span>👥</span> Collaborateurs
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="logout()">↩ Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Tableau de bord</h1>
+      <div id="topbar-actions"></div>
+    </div>
+    <div class="content" id="page-content"></div>
+  </div>
+</div>
+
+<!-- MODAL utilisateur -->
+<div class="modal-overlay" id="modal-user" style="display:none" onclick="closeModal('modal-user')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="modal-user-title">Ajouter un collaborateur</h2>
+      <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="user-edit-id" />
+      <div class="form-group">
+        <label>Nom complet</label>
+        <input type="text" id="user-nom-input" placeholder="EX: LAURA HUET" />
+      </div>
+      <div class="form-group">
+        <label>Code de connexion (PIN)</label>
+        <input type="text" id="user-code-input" placeholder="EX: LAURA2024" maxlength="20" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="user-email-input" placeholder="prenom.nom@assurexcel.fr" />
+      </div>
+      <div class="form-group">
+        <label>Rôle</label>
+        <select id="user-role-input">
+          <option value="collaborateur">Collaborateur</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Manager (nom exact du manager)</label>
+        <input type="text" id="user-manager-input" placeholder="EX: SOPHIE DUPONT" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-user')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveUser()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let TOKEN = localStorage.getItem('ndc_token');
+let USER = JSON.parse(localStorage.getItem('ndc_user') || 'null');
+let currentPage = 'dashboard';
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+
+async function doLogin() {
+  const code = document.getElementById('login-code').value.trim();
+  if (!code) return;
+  try {
+    const r = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const data = await r.json();
+    if (!r.ok) { showLoginError(data.error || 'Erreur'); return; }
+    TOKEN = data.token;
+    USER = data.user;
+    localStorage.setItem('ndc_token', TOKEN);
+    localStorage.setItem('ndc_user', JSON.stringify(USER));
+    initApp();
+  } catch (e) {
+    showLoginError('Erreur de connexion');
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function logout() {
+  TOKEN = null; USER = null;
+  localStorage.removeItem('ndc_token');
+  localStorage.removeItem('ndc_user');
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+document.getElementById('login-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+function initApp() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-nom').textContent = USER.nom;
+  document.getElementById('user-role').textContent = USER.role === 'admin' ? 'Administrateur' : 'Collaborateur';
+
+  if (USER.role === 'admin') {
+    document.getElementById('nav-section-admin').style.display = 'block';
+    document.getElementById('nav-import').style.display = 'flex';
+    document.getElementById('nav-users').style.display = 'flex';
+  }
+
+  loadStats().then(stats => {
+    if (stats && stats.expiresJ7 > 0) {
+      const badge = document.getElementById('badge-j7');
+      badge.textContent = stats.expiresJ7;
+      badge.style.display = 'inline';
+    }
+  });
+
+  showPage('dashboard');
+}
+
+async function apiFetch(path, opts = {}) {
+  const r = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${TOKEN}`, ...(opts.headers || {}) },
+  });
+  if (r.status === 401) { logout(); return null; }
+  return r;
+}
+
+// ── STATS ──────────────────────────────────────────────────────────────────────
+
+async function loadStats() {
+  const r = await apiFetch('/api/contrats/stats');
+  if (!r) return null;
+  return r.json();
+}
+
+// ── PAGES ─────────────────────────────────────────────────────────────────────
+
+function showPage(page) {
+  currentPage = page;
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  const navEl = document.getElementById(`nav-${page}`);
+  if (navEl) navEl.classList.add('active');
+
+  const titles = { dashboard: 'Tableau de bord', ndc: 'Notes de couverture', import: 'Importer les fichiers', users: 'Collaborateurs' };
+  document.getElementById('page-title').textContent = titles[page] || '';
+  document.getElementById('topbar-actions').innerHTML = '';
+
+  const pages = { dashboard: renderDashboard, ndc: renderNDC, import: renderImport, users: renderUsers };
+  if (pages[page]) pages[page]();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+
+async function renderDashboard() {
+  const content = document.getElementById('page-content');
+  content.innerHTML = '<p style="color:#94a3b8">Chargement...</p>';
+  const stats = await loadStats();
+  if (!stats) return;
+
+  const dernierImport = stats.dernierImport
+    ? `<div class="alert-info">Dernier import : ${new Date(stats.dernierImport.created_at).toLocaleDateString('fr-FR')} — ${stats.dernierImport.nb_ndc} NDC importées, ${stats.dernierImport.nb_associes} associées à un collaborateur</div>`
+    : '<div class="alert-info">Aucun import effectué. Importez les fichiers Excel pour commencer.</div>';
+
+  content.innerHTML = `
+    ${dernierImport}
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Total NDC actives</div>
+        <div class="value primary">${stats.total}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Expirent dans 7 jours</div>
+        <div class="value danger">${stats.expiresJ7}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Expirent dans 30 jours</div>
+        <div class="value warning">${stats.expiresJ30}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Expirées</div>
+        <div class="value" style="color:#94a3b8">${stats.expires}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Sans collaborateur</div>
+        <div class="value" style="color:#94a3b8">${stats.sansCollab}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="showPage('ndc')">📋 Voir toutes les NDC</button>
+      ${stats.expiresJ7 > 0 ? `<button class="btn btn-danger" onclick="showNDCJ7()">🔴 Voir les ${stats.expiresJ7} NDC J-7</button>` : ''}
+      ${USER.role === 'admin' && stats.expiresJ7 > 0 ? `<button class="btn btn-outline" onclick="testEmail()">📧 Tester les alertes email</button>` : ''}
+    </div>
+  `;
+}
+
+async function testEmail() {
+  if (!confirm('Envoyer maintenant les alertes email pour les NDC J-7 ?')) return;
+  const r = await apiFetch('/api/test-email', { method: 'POST' });
+  if (!r) return;
+  const data = await r.json();
+  if (data.ok) alert(`✅ ${data.emailsEnvoyes} email(s) envoyé(s) pour ${data.contrats} NDC`);
+  else alert('❌ Erreur : ' + data.error);
+}
+
+// ── NDC LIST ──────────────────────────────────────────────────────────────────
+
+let ndcFilter = { search: '', collaborateur: '', jours: '', point_vente: '' };
+
+async function renderNDC() {
+  const content = document.getElementById('page-content');
+  content.innerHTML = '<p style="color:#94a3b8">Chargement...</p>';
+
+  const [collabs, pvs] = await Promise.all([
+    apiFetch('/api/contrats/collaborateurs').then(r => r?.json() || []),
+    apiFetch('/api/contrats/points-vente').then(r => r?.json() || []),
+  ]);
+
+  content.innerHTML = `
+    <div class="filters">
+      <input type="text" placeholder="Rechercher client, police, offre..." id="f-search" value="${ndcFilter.search}" oninput="ndcFilter.search=this.value;loadNDC()" />
+      <select id="f-collab" onchange="ndcFilter.collaborateur=this.value;loadNDC()">
+        <option value="">Tous les collaborateurs</option>
+        ${collabs.map(c => `<option value="${c}" ${ndcFilter.collaborateur===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <select id="f-pv" onchange="ndcFilter.point_vente=this.value;loadNDC()">
+        <option value="">Tous les points de vente</option>
+        ${pvs.map(p => `<option value="${p}" ${ndcFilter.point_vente===p?'selected':''}>${p}</option>`).join('')}
+      </select>
+      <select id="f-jours" onchange="ndcFilter.jours=this.value;loadNDC()">
+        <option value="">Toutes les NDC</option>
+        <option value="7" ${ndcFilter.jours==='7'?'selected':''}>Expire dans 7 jours</option>
+        <option value="30" ${ndcFilter.jours==='30'?'selected':''}>Expire dans 30 jours</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="clearNDCFilters()">Réinitialiser</button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3 id="ndc-count">NDC</h3>
+      </div>
+      <div id="ndc-table-wrap">
+        <p style="padding:20px;color:#94a3b8">Chargement...</p>
+      </div>
+    </div>
+  `;
+  loadNDC();
+}
+
+function showNDCJ7() {
+  ndcFilter = { search: '', collaborateur: '', jours: '7', point_vente: '' };
+  showPage('ndc');
+}
+
+function clearNDCFilters() {
+  ndcFilter = { search: '', collaborateur: '', jours: '', point_vente: '' };
+  renderNDC();
+}
+
+async function loadNDC() {
+  const params = new URLSearchParams();
+  if (ndcFilter.search) params.set('search', ndcFilter.search);
+  if (ndcFilter.collaborateur) params.set('collaborateur', ndcFilter.collaborateur);
+  if (ndcFilter.jours) params.set('jours', ndcFilter.jours);
+  if (ndcFilter.point_vente) params.set('point_vente', ndcFilter.point_vente);
+
+  const r = await apiFetch(`/api/contrats?${params}`);
+  if (!r) return;
+  const contrats = await r.json();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  document.getElementById('ndc-count').textContent = `${contrats.length} NDC`;
+
+  if (contrats.length === 0) {
+    document.getElementById('ndc-table-wrap').innerHTML = `
+      <div class="empty-state"><div class="icon">📭</div><p>Aucune NDC trouvée</p></div>`;
+    return;
+  }
+
+  const rows = contrats.map(c => {
+    const exp = new Date(c.expiration_date); exp.setHours(0,0,0,0);
+    const jours = Math.ceil((exp - today) / 86400000);
+    let badgeClass = 'bg-ok';
+    let label = `J+${Math.abs(jours)}`;
+    if (jours < 0) { badgeClass = 'bg-danger'; label = `Expirée (${Math.abs(jours)}j)`; }
+    else if (jours === 0) { badgeClass = 'bg-danger'; label = "Aujourd'hui"; }
+    else if (jours <= 3) { badgeClass = 'bg-warning'; label = `J-${jours}`; }
+    else if (jours <= 7) { badgeClass = 'bg-primary'; label = `J-${jours}`; }
+    return `<tr>
+      <td><strong>${c.policy_number || '—'}</strong></td>
+      <td>${c.client_name}</td>
+      <td>${c.offre || '—'}</td>
+      <td>${c.policy_name || '—'}</td>
+      <td><span class="tag-pdv">${c.point_vente || '—'}</span></td>
+      <td>${c.collaborateur_nom || '<span style="color:#94a3b8">Non assigné</span>'}</td>
+      <td>${exp.toLocaleDateString('fr-FR')}</td>
+      <td><span class="badge-urgence ${badgeClass}">${label}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('ndc-table-wrap').innerHTML = `
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>N° Police</th><th>Client</th><th>Offre</th><th>Police</th>
+        <th>Point de vente</th><th>Collaborateur</th><th>Expiration</th><th>Délai</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+}
+
+// ── IMPORT ────────────────────────────────────────────────────────────────────
+
+let importFiles = { ndc: null, collab: null };
+
+async function renderImport() {
+  const content = document.getElementById('page-content');
+  content.innerHTML = `
+    <div class="alert-info">
+      Importez chaque jour les 2 fichiers Excel fournis par Salesforce. L'import remplace les NDC précédentes.
+    </div>
+    <div class="import-grid">
+      <div>
+        <div class="import-zone" id="zone-ndc" onclick="document.getElementById('file-ndc').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="dropFile(event,'ndc')">
+          <div class="icon">📄</div>
+          <div class="label">Fichier NDC.xlsx</div>
+          <div class="hint">Contient les contrats et dates d'expiration</div>
+          <div class="file-name" id="fname-ndc">Aucun fichier</div>
+        </div>
+        <input type="file" id="file-ndc" accept=".xlsx" style="display:none" onchange="selectFile(this,'ndc')" />
+      </div>
+      <div>
+        <div class="import-zone" id="zone-collab" onclick="document.getElementById('file-collab').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="dropFile(event,'collab')">
+          <div class="icon">👥</div>
+          <div class="label">Fichier Collaborateurs.xlsx</div>
+          <div class="hint">Associe chaque client à son collaborateur</div>
+          <div class="file-name" id="fname-collab">Aucun fichier</div>
+        </div>
+        <input type="file" id="file-collab" accept=".xlsx" style="display:none" onchange="selectFile(this,'collab')" />
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-import" onclick="doImport()">📤 Lancer l'import</button>
+    <div id="import-result"></div>
+    <div class="import-history">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Historique des imports</h3>
+      <div id="import-history-content"><p style="color:#94a3b8">Chargement...</p></div>
+    </div>
+  `;
+  loadImportHistory();
+}
+
+function selectFile(input, key) {
+  const file = input.files[0];
+  if (!file) return;
+  importFiles[key] = file;
+  document.getElementById(`fname-${key}`).textContent = file.name;
+  document.getElementById(`zone-${key}`).style.borderColor = 'var(--success)';
+}
+
+function dropFile(event, key) {
+  event.preventDefault();
+  document.getElementById(`zone-${key}`).classList.remove('drag');
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  importFiles[key] = file;
+  document.getElementById(`fname-${key}`).textContent = file.name;
+  document.getElementById(`zone-${key}`).style.borderColor = 'var(--success)';
+}
+
+async function doImport() {
+  if (!importFiles.ndc || !importFiles.collab) {
+    showImportResult('error', 'Veuillez sélectionner les 2 fichiers.');
+    return;
+  }
+  const btn = document.getElementById('btn-import');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Import en cours...';
+
+  const fd = new FormData();
+  fd.append('ndc', importFiles.ndc);
+  fd.append('collab', importFiles.collab);
+
+  try {
+    const r = await apiFetch('/api/imports', { method: 'POST', body: fd });
+    if (!r) return;
+    const data = await r.json();
+    if (r.ok) {
+      showImportResult('success', `✅ ${data.nb_ndc} NDC importées — ${data.nb_associes} associées à un collaborateur — ${data.nb_sans_collab} sans collaborateur`);
+      importFiles = { ndc: null, collab: null };
+      document.getElementById('fname-ndc').textContent = 'Aucun fichier';
+      document.getElementById('fname-collab').textContent = 'Aucun fichier';
+      loadImportHistory();
+      loadStats().then(s => {
+        if (s?.expiresJ7 > 0) {
+          document.getElementById('badge-j7').textContent = s.expiresJ7;
+          document.getElementById('badge-j7').style.display = 'inline';
+        }
+      });
+    } else {
+      showImportResult('error', '❌ ' + (data.error || 'Erreur inconnue'));
+    }
+  } catch (e) {
+    showImportResult('error', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📤 Lancer l\'import';
+  }
+}
+
+function showImportResult(type, msg) {
+  const el = document.getElementById('import-result');
+  el.className = `import-result ${type}`;
+  el.textContent = msg;
+}
+
+async function loadImportHistory() {
+  const r = await apiFetch('/api/imports');
+  if (!r) return;
+  const imports = await r.json();
+  const wrap = document.getElementById('import-history-content');
+  if (imports.length === 0) {
+    wrap.innerHTML = '<p style="color:#94a3b8">Aucun import</p>';
+    return;
+  }
+  wrap.innerHTML = `<div class="card"><div style="overflow-x:auto"><table>
+    <thead><tr><th>Date</th><th>NDC importées</th><th>Associées</th></tr></thead>
+    <tbody>${imports.map(i => `<tr>
+      <td>${new Date(i.created_at).toLocaleString('fr-FR')}</td>
+      <td>${i.nb_ndc}</td>
+      <td>${i.nb_associes}</td>
+    </tr>`).join('')}</tbody>
+  </table></div></div>`;
+}
+
+// ── USERS ─────────────────────────────────────────────────────────────────────
+
+let usersCache = [];
+
+async function renderUsers() {
+  document.getElementById('topbar-actions').innerHTML =
+    `<button class="btn btn-primary btn-sm" onclick="openUserModal()">+ Ajouter</button>`;
+  const content = document.getElementById('page-content');
+  content.innerHTML = '<p style="color:#94a3b8">Chargement...</p>';
+  await loadUsers();
+}
+
+async function loadUsers() {
+  const r = await apiFetch('/api/users');
+  if (!r) return;
+  usersCache = await r.json();
+  renderUsersTable();
+}
+
+function renderUsersTable() {
+  const content = document.getElementById('page-content');
+  if (usersCache.length === 0) {
+    content.innerHTML = `<div class="empty-state"><div class="icon">👥</div><p>Aucun collaborateur configuré</p><button class="btn btn-primary" style="margin-top:16px" onclick="openUserModal()">+ Ajouter le premier</button></div>`;
+    return;
+  }
+  const rows = usersCache.map(u => `<tr>
+    <td><strong>${u.nom}</strong></td>
+    <td>${u.email || '<span style="color:#ef4444">Non configuré</span>'}</td>
+    <td>${u.manager_nom || '<span style="color:#94a3b8">—</span>'}</td>
+    <td><span style="font-family:monospace;background:#f1f5f9;padding:2px 8px;border-radius:4px;font-size:12px">${u.code}</span></td>
+    <td><span style="font-size:12px;color:${u.role==='admin'?'var(--primary)':'var(--text-muted)'}">${u.role}</span></td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="openUserModal(${u.id})">Modifier</button>
+      <button class="btn btn-sm" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;margin-left:4px" onclick="deleteUser(${u.id})">Supprimer</button>
+    </td>
+  </tr>`).join('');
+
+  content.innerHTML = `
+    <div class="alert-info">
+      L'email du collaborateur est utilisé pour les alertes J-7. Le manager reçoit une copie de l'alerte de son collaborateur.
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>${usersCache.length} utilisateur${usersCache.length > 1 ? 's' : ''}</h3></div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Nom</th><th>Email</th><th>Manager</th><th>Code</th><th>Rôle</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+}
+
+function openUserModal(id) {
+  const user = id ? usersCache.find(u => u.id === id) : null;
+  document.getElementById('modal-user-title').textContent = user ? 'Modifier l\'utilisateur' : 'Ajouter un collaborateur';
+  document.getElementById('user-edit-id').value = user?.id || '';
+  document.getElementById('user-nom-input').value = user?.nom || '';
+  document.getElementById('user-code-input').value = user?.code || '';
+  document.getElementById('user-email-input').value = user?.email || '';
+  document.getElementById('user-role-input').value = user?.role || 'collaborateur';
+  document.getElementById('user-manager-input').value = user?.manager_nom || '';
+  document.getElementById('modal-user').style.display = 'flex';
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+async function saveUser() {
+  const id = document.getElementById('user-edit-id').value;
+  const payload = {
+    nom: document.getElementById('user-nom-input').value.trim(),
+    code: document.getElementById('user-code-input').value.trim(),
+    email: document.getElementById('user-email-input').value.trim(),
+    role: document.getElementById('user-role-input').value,
+    manager_nom: document.getElementById('user-manager-input').value.trim(),
+  };
+  if (!payload.nom || !payload.code) return alert('Nom et code requis');
+
+  const r = await apiFetch(id ? `/api/users/${id}` : '/api/users', {
+    method: id ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!r) return;
+  const data = await r.json();
+  if (!r.ok) { alert(data.error || 'Erreur'); return; }
+  closeModal('modal-user');
+  loadUsers();
+}
+
+async function deleteUser(id) {
+  const user = usersCache.find(u => u.id === id);
+  if (!confirm(`Supprimer ${user?.nom} ?`)) return;
+  await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+  loadUsers();
+}
+
+// ── INIT AUTO ─────────────────────────────────────────────────────────────────
+
+if (TOKEN && USER) {
+  initApp();
+} else {
+  document.getElementById('login-page').style.display = 'flex';
+}
+</script>
+</body>
+</html>
