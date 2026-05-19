@@ -165,6 +165,16 @@ function buildEmailManagers(parCollab, appUrl) {
   </div>`;
 }
 
+// Tri alphabétique des mots du nom pour comparer "LAURA HUET" == "HUET LAURA"
+function normaliserNom(s) {
+  return s.toUpperCase().trim().split(/\s+/).sort().join(' ');
+}
+
+function trouverUser(users, nom) {
+  const cible = normaliserNom(nom);
+  return users.find(u => normaliserNom(u.nom) === cible) || null;
+}
+
 async function envoyerAlertes(db) {
   const appUrl = process.env.APP_URL || 'https://ndc-management.up.railway.app';
   const today = new Date();
@@ -174,6 +184,9 @@ async function envoyerAlertes(db) {
 
   const todayStr = today.toISOString().slice(0, 10);
   const limiteStr = dateLimite.toISOString().slice(0, 10);
+
+  // Charger tous les users une seule fois
+  const allUsers = db.prepare('SELECT * FROM users').all();
 
   const contrats = db.prepare(`
     SELECT * FROM contrats
@@ -203,10 +216,8 @@ async function envoyerAlertes(db) {
   for (const [collab, contratsCollab] of Object.entries(parCollab)) {
     if (collab === 'Non assigné') continue;
 
-    const userRow = db.prepare(
-      "SELECT email, manager_nom FROM users WHERE UPPER(TRIM(nom)) = UPPER(TRIM(?))"
-    ).get(collab);
-
+    // Recherche flexible : insensible à l'ordre prénom/nom
+    const userRow = trouverUser(allUsers, collab);
     const emailCollab = userRow?.email;
     const managerNom = userRow?.manager_nom;
 
@@ -224,14 +235,12 @@ async function envoyerAlertes(db) {
         console.error(`  ❌ Erreur email ${emailCollab}:`, e.message);
       }
     } else {
-      console.log(`  ⚠️  Pas d'email pour ${collab}`);
+      console.log(`  ⚠️  Pas d'email pour "${collab}" — aucun user correspondant`);
     }
 
     // Email au manager du collaborateur (si différent des 2 managers fixes)
     if (managerNom) {
-      const managerRow = db.prepare(
-        "SELECT email FROM users WHERE UPPER(TRIM(nom)) = UPPER(TRIM(?))"
-      ).get(managerNom);
+      const managerRow = trouverUser(allUsers, managerNom);
       const emailManager = managerRow?.email;
       if (emailManager && !MANAGERS.includes(emailManager)) {
         try {
