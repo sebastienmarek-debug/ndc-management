@@ -12,7 +12,10 @@ function demarrerCron() {
       minute: '2-digit',
     }).format(now);
 
-    if (heureParis === '08:00') {
+    const jourSemaine = now.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'long' });
+    const estWeekend = jourSemaine === 'samedi' || jourSemaine === 'dimanche';
+
+    if (heureParis === '08:00' && !estWeekend) {
       console.log(`⏰ ${now.toISOString()} — Déclenchement alertes NDC J-7`);
       try {
         await envoyerAlertes(db);
