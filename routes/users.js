@@ -4,6 +4,17 @@ const { auth, adminOnly } = require('./auth');
 
 const router = express.Router();
 
+// POST /api/users/reassign — réattribue les notes de couverture d'un collaborateur à un autre
+router.post('/reassign', auth, adminOnly, (req, res) => {
+  const up = s => String(s || '').trim().toUpperCase();
+  const from = up(req.body.from), to = up(req.body.to);
+  if (!from || !to || from === to) return res.status(400).json({ error: 'from et to requis et différents' });
+  try {
+    const r = db.prepare('UPDATE contrats SET collaborateur_nom=? WHERE UPPER(TRIM(collaborateur_nom))=?').run(to, from);
+    res.json({ ok: true, updated: r.changes });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/', auth, adminOnly, (req, res) => {
   const users = db.prepare('SELECT id, nom, code, role, email, manager_nom, actif, created_at FROM users ORDER BY nom').all();
   res.json(users);
