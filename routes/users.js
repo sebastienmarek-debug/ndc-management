@@ -5,7 +5,7 @@ const { auth, adminOnly } = require('./auth');
 const router = express.Router();
 
 router.get('/', auth, adminOnly, (req, res) => {
-  const users = db.prepare('SELECT id, nom, code, role, email, manager_nom, created_at FROM users ORDER BY nom').all();
+  const users = db.prepare('SELECT id, nom, code, role, email, manager_nom, actif, created_at FROM users ORDER BY nom').all();
   res.json(users);
 });
 
@@ -28,18 +28,19 @@ router.post('/', auth, adminOnly, (req, res) => {
 });
 
 router.put('/:id', auth, adminOnly, (req, res) => {
-  const { nom, code, role, email, manager_nom } = req.body;
+  const { nom, code, role, email, manager_nom, actif } = req.body;
   const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
   try {
     db.prepare(
-      'UPDATE users SET nom=?, code=?, role=?, email=?, manager_nom=? WHERE id=?'
+      'UPDATE users SET nom=?, code=?, role=?, email=?, manager_nom=?, actif=? WHERE id=?'
     ).run(
       (nom || existing.nom).trim().toUpperCase(),
       (code || existing.code).trim().toUpperCase(),
       role || existing.role,
       email ? email.trim().toLowerCase() : existing.email,
       manager_nom ? manager_nom.trim().toUpperCase() : existing.manager_nom,
+      actif === undefined ? (existing.actif ?? 1) : (actif ? 1 : 0),
       req.params.id
     );
     res.json({ ok: true });
