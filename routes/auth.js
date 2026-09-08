@@ -26,6 +26,7 @@ router.post('/login', (req, res) => {
   if (!code) return res.status(400).json({ error: 'Code requis' });
   const user = db.prepare('SELECT * FROM users WHERE UPPER(code) = UPPER(?)').get(code.trim());
   if (!user) return res.status(401).json({ error: 'Code incorrect' });
+  if (user.actif === 0) return res.status(401).json({ error: 'Compte désactivé' });
   const token = jwt.sign({ id: user.id, nom: user.nom, role: user.role }, SECRET, { expiresIn: '30d' });
   res.json({ token, user: { id: user.id, nom: user.nom, role: user.role } });
 });
