@@ -66,6 +66,9 @@ db.exec(`
 try {
   db.exec(`ALTER TABLE users ADD COLUMN manager_nom TEXT`);
 } catch (_) {}
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN actif INTEGER NOT NULL DEFAULT 1`);
+} catch (_) {}
 
 // Seed : admin + tous les collaborateurs (mêmes codes que fichedebord)
 const adminExists = db.prepare("SELECT id FROM users WHERE code = 'MANAGER@SSUREXCEL'").get();
