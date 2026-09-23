@@ -255,8 +255,11 @@
 
 <script>
 const API = '';
+// Lecture défensive : un ndc_user corrompu ne doit jamais faire planter le script (sinon écran de connexion inopérant)
 let TOKEN = localStorage.getItem('ndc_token');
-let USER = JSON.parse(localStorage.getItem('ndc_user') || 'null');
+let USER = null;
+try { USER = JSON.parse(localStorage.getItem('ndc_user') || 'null'); }
+catch (e) { TOKEN = null; USER = null; try { localStorage.removeItem('ndc_token'); localStorage.removeItem('ndc_user'); } catch {} }
 let currentPage = 'dashboard';
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
